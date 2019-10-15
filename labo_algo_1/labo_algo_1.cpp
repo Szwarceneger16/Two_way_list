@@ -153,11 +153,7 @@ public:
 		list_node<T>* scroll = this->head;
 		while (scroll)
 		{
-			if (funkcja(scroll->val, value))
-			{
-				scroll = this->head;
-				return true;
-			}
+			if (funkcja(scroll->val, value)) return true;
 			scroll = scroll->next;
 		}
 		return false;
@@ -211,10 +207,10 @@ public:
 
 	bool remove_value(const T value, bool (*funkcja) (const T  a, const T  b))
 	{
-		list_node<T>* scroll = this->head;
-		bool flag = false,flag2 = false;
-		
+		list_node<T>* scroll = this->head,*tmp;
 		if (scroll == NULL) return false;
+		bool flag = false,flag2 = true;
+		
 
 		if (funkcja(scroll->val, value))
 		{
@@ -222,34 +218,52 @@ public:
 			{
 				scroll = scroll->next;
 				this->head = scroll;
+				scroll->prev = NULL;
 				delete scroll->prev;
+				this->size--;
 			}
 			else
 			{
 				delete scroll;
-				this->head = NULL;
+				this->head = this->tail = NULL;
+				this->size--;
 				return true;
 			}
 		}
 		
 		while (scroll->next)
 		{
-			flag2 = false;
+			flag2 = true;
 			if (funkcja(scroll->val, value))
 			{
-				scroll->prev->next = scroll->next;
-				scroll->next->prev = scroll->prev;
-				scroll = scroll->next;
-				delete scroll->prev;
-				flag = true; flag2 = true;
+				if (!scroll->prev)
+				{
+					scroll = scroll->next;
+					delete scroll->prev;
+					scroll->prev = NULL;
+					this->head = scroll;
+					this->size--;
+					flag2 = false;
+				}
+				else
+				{
+					tmp = scroll;
+					scroll->next->prev = scroll->prev;
+					scroll->prev->next = scroll->next;
+					scroll = scroll->next;
+					delete tmp;
+					this->size--;
+					flag2 = false;
+				}
 			}
 			if (flag2) scroll = scroll->next;
 		}
 
 		if (funkcja(scroll->val, value))
 		{
-			scroll->prev != NULL ? this->tail = scroll->prev : this->tail = NULL;
+			scroll->prev != NULL ? this->tail = scroll->prev : this->tail = this->head = NULL;
 			delete scroll;
+			this->size--;
 		}
 
 		return flag;
@@ -257,13 +271,44 @@ public:
 
 	bool remove_position(const long& pos)// throw std::out_of_range
 	{
-		if (pos < 0 || pos > this->size) throw std::out_of_range("Don't find this value");
-		list_node<T>* scroll = this->head;
+		if (pos < 0 || pos > this->size) return false;
+		list_node<T>* scroll = this->head,*tmp;
 		for (long i = 0; i < pos; i++) scroll = scroll->next;
-		scroll->prev->next = scroll->next;
-		scroll->next->prev = scroll->prev;
-		delete scroll;
-		this->size--;
+		if (!scroll->prev && !scroll->next)
+		{
+			delete scroll;
+			this->tail = this->head = NULL;
+		}
+		else if (!scroll->prev)
+		{
+			scroll = scroll->next;
+			delete scroll->prev;
+			scroll->prev = NULL;
+			this->head = scroll;
+			this->size--;
+			return true;
+		}
+		else if (!scroll->next)
+		{
+			tmp = scroll;
+			scroll = scroll->prev;
+			this->tail = scroll;
+			scroll->next = NULL;
+			delete tmp;
+			this->size--;
+			return true;
+		}
+		else
+		{
+			tmp = scroll;
+			scroll->next->prev = scroll->prev;
+			scroll->prev->next = scroll->next;
+			scroll = scroll->next;
+			delete tmp;
+			this->size--;
+			return true;
+		}
+
 		return false;
 	}
 
@@ -511,9 +556,9 @@ int main()
 	{
 		const int n = pow(10, o);
 		clock_t  t1 = clock();
+		srand(time(NULL));
 		for (int i = 0; i < n; i++)
 		{
-			srand(time(NULL));
 			lista.add_head(rand() % 100);
 		}
 		clock_t  t2 = clock();
@@ -524,11 +569,11 @@ int main()
 		const int m = pow(10, 4);
 
 		t1 = clock();
+		srand(time(NULL));
 		for (int i = 0; i < m; i++)
 		{
-			srand(time(NULL));
 			int kk = (rand() % 100);
-			lista.remove_value(kk,comp2);
+			lista.remove_value(2,comp2);
 		}
 
 		t2 = clock();
